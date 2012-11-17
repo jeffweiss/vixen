@@ -74,4 +74,6 @@ module Vix::Constants
                        :event_type_job_progress,  3,
                        :event_type_find_item,     8 )
 
+  VixFileAttributes = enum( :file_attributes_directory, 1,
+                            :file_attributes_directory, 2 )
 end

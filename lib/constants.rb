@@ -69,4 +69,9 @@ module Vix::Constants
                         :property_snapshot_powerstate,                   4205,
                         :property_guest_sharedfolders_shares_path,       4525,
                         :property_vm_encryption_password,                7001 )
+
+  VixEventType = enum( :event_type_job_completed, 2,
+                       :event_type_job_progress,  3,
+                       :event_type_find_item,     8 )
+
 end

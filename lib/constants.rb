@@ -78,4 +78,11 @@ module Vix::Constants
                             :file_attributes_directory, 2 )
 
   VixHostOptions = enum( :hostoption_verify_ssl_cert, 0x4000 )
+
+  VixServiceProvider = enum( :serviceprovider_default,                    1,
+                             :serviceprovider_vmware_server,              2,
+                             :serviceprovider_vmware_workstation,         3,
+                             :serviceprovider_vmare_player,               4,
+                             :serviceprovider_vmware_vi_server,          10,
+                             :serviceprovider_vmware_workstation_shared, 11 )
 end

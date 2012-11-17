@@ -76,4 +76,6 @@ module Vix::Constants
 
   VixFileAttributes = enum( :file_attributes_directory, 1,
                             :file_attributes_directory, 2 )
+
+  VixHostOptions = enum( :hostoption_verify_ssl_cert, 0x4000 )
 end

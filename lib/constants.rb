@@ -85,4 +85,6 @@ module Vix::Constants
                              :serviceprovider_vmare_player,               4,
                              :serviceprovider_vmware_vi_server,          10,
                              :serviceprovider_vmware_workstation_shared, 11 )
+
+  VixApiVersion = enum( :api_version, -1 )
 end

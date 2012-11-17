@@ -19,6 +19,8 @@ module Vix::Constants
                           :property_type_handle,  4,
                           :property_type_int64,   5,
                           :property_type_blob,    6 )
+
+  VixError = enum( :ok, 0 )
   
   VixPropertyId = enum( :property_none,                                     0,
                         :property_meta_data_container,                      2,

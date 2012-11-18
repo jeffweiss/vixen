@@ -56,8 +56,12 @@ module Vix::Host
     host_handle = host_handle_pointer.read_int
   end
 
-
   def self.list_running_vms(host_handle)
+    vms = running_vms host_handle
+    vms.each { |vm| puts "Found: #{vm}" }
+  end
+
+  def self.running_vms(host_handle)
     available_vms = []
 
     collect_proc = Proc.new do |job_handle, event_type, more_event_info, client_data|
@@ -85,14 +89,12 @@ module Vix::Host
 
     # FIXME: we seem to go into deadlock without this sleep
     # I'm not exactly sure why
-    sleep 0.01
+    sleep 0.1
     err = VixJob_Wait(job_handle, 
                       VixPropertyId[:none] )
 
     Vix_ReleaseHandle(job_handle)
-    available_vms.each do |vm_path|
-      puts "Found: #{vm_path}"
-    end
+    available_vms
   end
 
   def self.disconnect(handle)

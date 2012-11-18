@@ -40,18 +40,32 @@ module Vixen::Bridge
                                  VixHandle[:invalid], 
                                  nil, 
                                  nil)
-    host_handle_pointer = FFI::MemoryPointer.new :int, 1
-    host_handle_pointer.write_int VixHandle[:invalid]
-    err = VixJob_Wait(job_handle, 
-                      VixPropertyId[:job_result_handle], 
-                      :pointer, host_handle_pointer, 
-                      :int, VixPropertyId[:none])
-
-    unless err == VixError[:ok]
-      raise "can't connect (err: #{err}): #{Vix_GetErrorText(err, nil)}"
+    host_handle = pointer_to_handle do |host_handle_pointer|
+      VixJob_Wait(job_handle, 
+                  VixPropertyId[:job_result_handle], 
+                  :pointer, host_handle_pointer, 
+                  :int, VixPropertyId[:none])
     end
     Vix_ReleaseHandle(job_handle)
-    host_handle = host_handle_pointer.read_int
+    host_handle
+  end
+
+  def self.pointer_to(type, &block)
+    pointer = FFI::MemoryPointer.new type, 1
+    err = yield pointer
+    unless err == VixError[:ok]
+      raise "problem executing pointer_to_handle block. (error: %s, %s)" %
+        [err, Vix_GetErrorText(err, nil)]
+    end
+    pointer.send("read_#{type}".to_sym)
+  end
+
+  def self.pointer_to_handle(&block)
+    pointer_to :int, &block
+  end
+
+  def self.pointer_to_string(&block)
+    pointer_to :pointer, &block
   end
 
   def self.running_vms(host_handle)
@@ -96,44 +110,37 @@ module Vixen::Bridge
                                 VixHandle[:invalid],
                                 nil,
                                 nil)
-    vm_handle_pointer = FFI::MemoryPointer.new :int, 1
-    vm_handle_pointer.write_int VixHandle[:invalid]
-    err = VixJob_Wait(job_handle,
-                      VixPropertyId[:job_result_handle],
-                      :pointer, vm_handle_pointer,
-                      :int, VixPropertyId[:none])
-
-    # FIXME: add error handling
-
+    vm_handle = pointer_to_handle do |vm_handle_pointer|
+      VixJob_Wait(job_handle,
+                  VixPropertyId[:job_result_handle],
+                  :pointer, vm_handle_pointer,
+                  :int, VixPropertyId[:none])
+    end
     Vix_ReleaseHandle(job_handle)
-    vm_handle = vm_handle_pointer.read_int
+    vm_handle
   end
 
   def self.current_snapshot(vm_handle)
-    snapshot_handle_pointer = FFI::MemoryPointer.new :int, 1
-    snapshot_handle_pointer.write_int VixHandle[:invalid]
-    err = VixVM_GetCurrentSnapshot(vm_handle, snapshot_handle_pointer)
-    snapshot_handle = snapshot_handle_pointer.read_int
+    pointer_to_handle do |snapshot_handle_pointer|
+      VixVM_GetCurrentSnapshot(vm_handle, snapshot_handle_pointer)
+    end
   end
 
   def self.get_parent(snapshot_handle)
-    snapshot_handle_pointer = FFI::MemoryPointer.new :int, 1
-    snapshot_handle_pointer.write_int VixHandle[:invalid]
-    err = VixSnapshot_GetParent(snapshot_handle, snapshot_handle_pointer)
-    parent_handle = snapshot_handle_pointer.read_int
+    pointer_to_handle do |snapshot_handle_pointer|
+      VixSnapshot_GetParent(snapshot_handle, snapshot_handle_pointer)
+    end
   end
 
   def self.get_string_property(handle, property_id)
-    location_pointer = FFI::MemoryPointer.new :pointer, 1
-    err = Vix_GetProperties(handle,
-                            property_id,
-                            :pointer, location_pointer,
-                            :int, VixPropertyId[:none])
-    # FIXME: Do some error handling
-    return nil unless err == VixError[:ok]
-    string_pointer = location_pointer.read_pointer
-    value = string_pointer.read_string.force_encoding("UTF-8").dup
-    Vix_FreeBuffer(string_pointer)
+    string = pointer_to_string do |string_pointer|
+      Vix_GetProperties(handle,
+                        property_id,
+                        :pointer, string_pointer,
+                        :int, VixPropertyId[:none])
+    end
+    value = string.read_string.force_encoding("UTF-8").dup
+    Vix_FreeBuffer(string)
     return value
   end
 

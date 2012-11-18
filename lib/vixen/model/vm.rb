@@ -14,4 +14,16 @@ class Vixen::Model::VM < Vixen::Model::Base
   def resume
     power_on
   end
+
+  def suspend
+    Vixen::Bridge.suspend handle
+  end
+
+  def power_off
+    Vixen::Bridge.power_off handle
+  end
+
+  def reset
+    Vixen::Bridge.reset handle
+  end
 end

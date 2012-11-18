@@ -59,12 +59,11 @@ module Vixen::Bridge
                                  nil,
                                  nil)
     host_handle = pointer_to_handle do |host_handle_pointer|
-      VixJob_Wait(job_handle,
-                  VixPropertyId[:job_result_handle],
+      VixJob_Wait job_handle, VixPropertyId[:job_result_handle],
                   :pointer, host_handle_pointer,
-                  :int, VixPropertyId[:none])
+                  :int, VixPropertyId[:none]
     end
-    Vix_ReleaseHandle(job_handle)
+    Vix_ReleaseHandle job_handle
     host_handle
   end
 
@@ -75,7 +74,7 @@ module Vixen::Bridge
       raise "problem executing pointer_to_handle block. (error: %s, %s)" %
         [err, Vix_GetErrorText(err, nil)]
     end
-    pointer.send("read_#{type}".to_sym)
+    pointer.send "read_#{type}".to_sym
   end
 
   def self.pointer_to_handle(&block)
@@ -84,6 +83,16 @@ module Vixen::Bridge
 
   def self.pointer_to_string(&block)
     pointer_to :pointer, &block
+  end
+
+  def self.wait_for_async_job(operation, &block)
+    job_handle = yield
+    err = VixJob_Wait job_handle, VixPropertyId[:none]
+    unless err == VixError[:ok]
+      raise "couldn't %s. (error: %s, %s)" %
+        [operation, err, Vix_GetErrorText(err, nil)]
+    end
+    Vix_ReleaseHandle job_handle
   end
 
   def self.running_vms(host_handle)
@@ -106,19 +115,18 @@ module Vixen::Bridge
     # FIXME: we seem to go into deadlock without this sleep
     # I'm not exactly sure why
     sleep 0.5
-    err = VixJob_Wait(job_handle,
-                      VixPropertyId[:none] )
+    err = VixJob_Wait job_handle, VixPropertyId[:none]
 
-    Vix_ReleaseHandle(job_handle)
+    Vix_ReleaseHandle job_handle
     available_vms
   end
 
   def self.disconnect(handle)
-    VixHost_Disconnect(handle)
+    VixHost_Disconnect handle
   end
 
   def self.destroy(handle)
-    Vix_ReleaseHandle(handle)
+    Vix_ReleaseHandle handle
   end
 
   def self.open_vm(host_handle, vm_path)
@@ -134,19 +142,19 @@ module Vixen::Bridge
                   :pointer, vm_handle_pointer,
                   :int, VixPropertyId[:none])
     end
-    Vix_ReleaseHandle(job_handle)
+    Vix_ReleaseHandle job_handle
     vm_handle
   end
 
   def self.current_snapshot(vm_handle)
     pointer_to_handle do |snapshot_handle_pointer|
-      VixVM_GetCurrentSnapshot(vm_handle, snapshot_handle_pointer)
+      VixVM_GetCurrentSnapshot vm_handle, snapshot_handle_pointer
     end
   end
 
   def self.get_parent(snapshot_handle)
     pointer_to_handle do |snapshot_handle_pointer|
-      VixSnapshot_GetParent(snapshot_handle, snapshot_handle_pointer)
+      VixSnapshot_GetParent snapshot_handle, snapshot_handle_pointer
     end
   end
 
@@ -163,17 +171,27 @@ module Vixen::Bridge
   end
 
   def self.power_on(vm_handle)
-    job_handle = VixVM_PowerOn(vm_handle,
-                               0,
-                               VixHandle[:invalid],
-                               nil,
-                               nil)
-    err = VixJob_Wait(job_handle, VixPropertyId[:none])
-    unless err == VixError[:ok]
-      raise "couldn't power on VM. (error: %s, %s)" %
-        [err, Vix_GetErrorText(err, nil)]
+    wait_for_async_job "power on VM" do
+      VixVM_PowerOn vm_handle, VixVMPowerOptions[:normal], VixHandle[:invalid], nil, nil
     end
-    Vix_ReleaseHandle(job_handle)
+  end
+
+  def self.power_off(vm_handle)
+    wait_for_async_job "power off VM" do
+      VixVM_PowerOff vm_handle, VixVMPowerOptions[:normal], nil, nil
+    end
+  end
+
+  def self.reset(vm_handle)
+    wait_for_async_job "reset VM" do
+      VixVM_Reset vm_handle, VixVMPowerOptions[:normal], nil, nil
+    end
+  end
+
+  def self.suspend(vm_handle)
+    wait_for_async_job "suspend VM" do
+      VixVM_Suspend vm_handle, VixVMPowerOptions[:normal], nil, nil
+    end
   end
 
 end

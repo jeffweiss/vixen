@@ -94,4 +94,10 @@ module Vixen::Constants
                           :registered_vms, 4 )
 
   VixVMOpenOptions = enum( :normal, 0x0 )
+
+  VixVMPowerOptions = enum( :normal,                         0,
+                            :from_guest,                0x0004,
+                            :suppress_snapshot_poweron, 0x0080,
+                            :launch_gui,                0x0200,
+                            :start_vm_paused,           0x1000 )
 end

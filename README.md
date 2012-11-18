@@ -1,3 +1,10 @@
+Getting Vixen
+=============
+
+```shell
+$ gem install vixen
+```
+
 Using Vixen
 ===========
 

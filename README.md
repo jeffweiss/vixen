@@ -19,3 +19,8 @@ Limitations
 -----------
 Vixen currently only supports VMware Fusion 5.
 It also only lists the current snapshot of each of the running virtual machines.
+
+See Also
+--------
+
+ * [Official VMware VIX 1.12 documentation](http://www.vmware.com/support/developer/vix-api/vix112_reference/)

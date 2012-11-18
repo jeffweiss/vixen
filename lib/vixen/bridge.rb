@@ -1,4 +1,5 @@
 require 'ffi'
+require 'facter'
 
 module Vixen; end
 module Vixen::Bridge
@@ -7,7 +8,23 @@ module Vixen::Bridge
   require File.join(File.dirname(__FILE__), 'constants')
   extend Vixen::Constants
   include Vixen::Constants
-  ffi_lib "/Applications/VMware Fusion.app/Contents/Public/libvixAllProducts.dylib"
+
+
+  def self.library_location
+    kernel = Facter.value(:kernel) || ''
+    arch = Facter.value(:architecture)
+    case kernel.downcase
+    when 'darwin'
+      ext = 'dylib'
+    when 'linux'
+      ext = 'so'
+    when 'windows'
+      ext = 'dll'
+    end
+    File.join(File.dirname(__FILE__), %W[.. .. ext #{kernel} #{arch} libvixAllProducts.#{ext}])
+  end
+
+  ffi_lib library_location
 
   typedef :int, :handle
 

@@ -1,4 +1,4 @@
-module Vix::Constants
+module Vixen::Constants
   extend FFI::Library
 
   VixHandle = enum( :invalid, 0 )

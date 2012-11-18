@@ -21,7 +21,7 @@ module Vixen::Constants
                           :blob,    6 )
 
   VixError = enum( :ok, 0 )
-  
+
   VixPropertyId = enum( :none,                                     0,
                         :meta_data_container,                      2,
                         :host_hosttype,                           50,

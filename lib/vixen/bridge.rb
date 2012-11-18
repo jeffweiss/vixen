@@ -47,20 +47,20 @@ module Vixen::Bridge
   def self.connect(hostType, hostname, port, username, password)
     job_handle = VixHandle[:invalid]
     host_handle = VixHandle[:invalid]
-    job_handle = VixHost_Connect(VixApiVersion[:api_version], 
-                                 hostType, 
-                                 hostname, 
-                                 port, 
-                                 username, 
-                                 password, 
-                                 0, 
-                                 VixHandle[:invalid], 
-                                 nil, 
+    job_handle = VixHost_Connect(VixApiVersion[:api_version],
+                                 hostType,
+                                 hostname,
+                                 port,
+                                 username,
+                                 password,
+                                 0,
+                                 VixHandle[:invalid],
+                                 nil,
                                  nil)
     host_handle = pointer_to_handle do |host_handle_pointer|
-      VixJob_Wait(job_handle, 
-                  VixPropertyId[:job_result_handle], 
-                  :pointer, host_handle_pointer, 
+      VixJob_Wait(job_handle,
+                  VixPropertyId[:job_result_handle],
+                  :pointer, host_handle_pointer,
                   :int, VixPropertyId[:none])
     end
     Vix_ReleaseHandle(job_handle)
@@ -105,7 +105,7 @@ module Vixen::Bridge
     # FIXME: we seem to go into deadlock without this sleep
     # I'm not exactly sure why
     sleep 0.5
-    err = VixJob_Wait(job_handle, 
+    err = VixJob_Wait(job_handle,
                       VixPropertyId[:none] )
 
     Vix_ReleaseHandle(job_handle)

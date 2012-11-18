@@ -9,10 +9,14 @@ class Vixen::Model::Host < Vixen::Model::Base
     end
   end
 
+  def open_vm(path)
+    Vixen::Model::VM.new(Vixen::Bridge.open_vm handle, path)
+  end
+
   def running_vms
     vms = []
     paths_of_running_vms.each do |path|
-      vms << Vixen::Model::VM.new(Vixen::Bridge.open_vm handle, path)
+      vms << open_vm(path)
     end
     vms
   end

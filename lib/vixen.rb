@@ -1,6 +1,14 @@
 require 'ffi'
 
 module Vixen
+  def self.local_connect(login = nil, password = nil)
+    connect Vixen::Constants::VixServiceProvider[:vmware_workstation], nil, 0, login, password
+  end
+
+  def self.connect(host_type, hostname, port, username, password)
+    handle = Vixen::Bridge.connect(host_type, hostname, port, username, password)
+    Vixen::Model::Host.new(handle)
+  end
 
 end
 

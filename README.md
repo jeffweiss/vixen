@@ -19,13 +19,19 @@ Vixen can also be used on virtual machines that are not currently active:
 ```ruby
 require 'vixen'
 path = '/Users/jeff/Documents/Virtual Machines/win2003sat.vmwarevm/Windows Server 2003 Enterprise x64 Edition.vmx'
-puts Vixen.local_connect.open_vm(path).current_snapshot.full_name
+puts Vixen.local_connect.open_vm(path).power_on.current_snapshot.full_name
 ```
+
+Capabilities
+------------
+
+ * View running VMs
+ * Control power state (on, off, suspend, reset) of VMs
+ * Viewing the current snapshot
 
 Limitations
 -----------
-Vixen currently only supports VMware Fusion 5.
-It also only lists the current snapshot of each of the running virtual machines.
+Vixen currently only supports running on Mac OS X or Linux.
 
 See Also
 --------

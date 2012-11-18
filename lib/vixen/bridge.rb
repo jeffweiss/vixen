@@ -85,6 +85,10 @@ module Vixen::Bridge
     pointer_to :pointer, &block
   end
 
+  def self.pointer_to_int(&block)
+    pointer_to :int, &block
+  end
+
   def self.wait_for_async_job(operation, &block)
     job_handle = yield
     err = VixJob_Wait job_handle, VixPropertyId[:none]
@@ -160,14 +164,21 @@ module Vixen::Bridge
 
   def self.get_string_property(handle, property_id)
     string = pointer_to_string do |string_pointer|
-      Vix_GetProperties(handle,
-                        property_id,
+      Vix_GetProperties(handle, property_id,
                         :pointer, string_pointer,
                         :int, VixPropertyId[:none])
     end
     value = string.read_string.force_encoding("UTF-8").dup
     Vix_FreeBuffer(string)
     return value
+  end
+
+  def self.get_int_property(handle, property_id)
+    pointer_to_int do |int_pointer|
+      Vix_GetProperties(handle, property_id,
+                        :pointer, int_pointer,
+                        :int, VixPropertyId[:none])
+    end
   end
 
   def self.power_on(vm_handle)
@@ -192,6 +203,10 @@ module Vixen::Bridge
     wait_for_async_job "suspend VM" do
       VixVM_Suspend vm_handle, VixVMPowerOptions[:normal], nil, nil
     end
+  end
+
+  def self.current_power_state(vm_handle)
+    get_int_property vm_handle, VixPropertyId[:vm_power_state]
   end
 
 end

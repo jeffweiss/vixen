@@ -100,4 +100,16 @@ module Vixen::Constants
                             :suppress_snapshot_poweron, 0x0080,
                             :launch_gui,                0x0200,
                             :start_vm_paused,           0x1000 )
+
+  VixPowerState = enum( :powering_off,   0x0001,
+                        :powered_off,    0x0002,
+                        :powering_on,    0x0004,
+                        :powered_on,     0x0008,
+                        :suspending,     0x0010,
+                        :suspended,      0x0020,
+                        :tools_running,  0x0040,
+                        :resetting,      0x0080,
+                        :blocked_on_msg, 0x0100,
+                        :paused,         0x0200,
+                        :resuming,       0x0800 )
 end

@@ -1,7 +1,7 @@
 module Vix::Constants
   extend FFI::Library
 
-  VixHandle = enum( :invalid_handle, 0 )
+  VixHandle = enum( :invalid, 0 )
 
   VixHandleType = enum( :none,                0,
                         :host,                2,
@@ -92,4 +92,6 @@ module Vix::Constants
 
   VixFindItemType = enum( :running_vms,    1,
                           :registered_vms, 4 )
+
+  VixVMOpenOptions = enum( :normal, 0x0 )
 end

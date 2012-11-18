@@ -24,14 +24,15 @@ module Vix::Host
   attach_function :VixJob_Wait, [:handle, :int, :varargs], :int
   attach_function :Vix_GetProperties, [:handle, :int, :varargs], :int
   attach_function :Vix_FreeBuffer, [:pointer], :void
+  attach_function :VixVM_GetCurrentSnapshot, [:handle, :pointer], :int
 
   def self.local_connect(login = nil, password = nil)
     connect VixServiceProvider[:vmware_workstation], nil, 0, login, password
   end
 
   def self.connect(hostType, hostname, port, username, password)
-    job_handle = VixHandle[:invalid_handle]
-    host_handle = VixHandle[:invalid_handle]
+    job_handle = VixHandle[:invalid]
+    host_handle = VixHandle[:invalid]
     job_handle = VixHost_Connect(VixApiVersion[:api_version], 
                                  hostType, 
                                  hostname, 
@@ -39,11 +40,11 @@ module Vix::Host
                                  username, 
                                  password, 
                                  0, 
-                                 VixHandle[:invalid_handle], 
+                                 VixHandle[:invalid], 
                                  nil, 
                                  nil)
     host_handle_pointer = FFI::MemoryPointer.new :int, 1
-    host_handle_pointer.write_int VixHandle[:invalid_handle]
+    host_handle_pointer.write_int VixHandle[:invalid]
     err = VixJob_Wait(job_handle, 
                       VixPropertyId[:job_result_handle], 
                       :pointer, host_handle_pointer, 
@@ -82,7 +83,7 @@ module Vix::Host
 
     job_handle = VixHost_FindItems(host_handle,
                                    VixFindItemType[:running_vms],
-                                   VixHandle[:invalid_handle],
+                                   VixHandle[:invalid],
                                    -1,
                                    collect_proc,
                                    nil)
@@ -105,9 +106,51 @@ module Vix::Host
     Vix_ReleaseHandle(handle)
   end
 
+  def self.open_vm(host_handle, vm_path)
+    job_handle = VixHost_OpenVM(host_handle,
+                                vm_path,
+                                VixVMOpenOptions[:normal],
+                                VixHandle[:invalid],
+                                nil,
+                                nil)
+    vm_handle_pointer = FFI::MemoryPointer.new :int, 1
+    vm_handle_pointer.write_int VixHandle[:invalid]
+    err = VixJob_Wait(job_handle,
+                      VixPropertyId[:job_result_handle],
+                      :pointer, vm_handle_pointer,
+                      :int, VixPropertyId[:none])
+
+    # FIXME: add error handling
+
+    Vix_ReleaseHandle(job_handle)
+    vm_handle = vm_handle_pointer.read_int
+  end
+
+  def self.current_snapshot(vm_handle)
+    snapshot_handle_pointer = FFI::MemoryPointer.new :int, 1
+    snapshot_handle_pointer.write_int VixHandle[:invalid]
+    err = VixVM_GetCurrentSnapshot(vm_handle, snapshot_handle_pointer)
+    snapshot_handle = snapshot_handle_pointer.read_int
+    location_pointer = FFI::MemoryPointer.new(:pointer, 1)
+    err = Vix_GetProperties(snapshot_handle,
+                            VixPropertyId[:snapshot_displayname],
+                            :pointer, location_pointer,
+                            :int, VixPropertyId[:none])
+    Vix_ReleaseHandle(snapshot_handle)
+    string_pointer = location_pointer.read_pointer
+    snapshot_name = string_pointer.read_string.force_encoding("UTF-8").dup
+    Vix_FreeBuffer(string_pointer)
+    snapshot_name
+  end
+
   # I use these to test the basic functionality after requiring this file
   #handle = local_connect
-  #list_running_vms handle
+  #vms = running_vms handle
+  #vms.each do |vm|
+  #  vm_handle = open_vm handle, vm
+  #  puts "Found: #{vm}, Current Snapshot: #{current_snapshot(vm_handle)}"
+  #  destroy(vm_handle)
+  #end
   #disconnect handle
   #destroy handle
   

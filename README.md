@@ -12,7 +12,7 @@ Vixen can also be used on virtual machines that are not currently active:
 ```ruby
 require 'vixen'
 path = '/Users/jeff/Documents/Virtual Machines/win2003sat.vmwarevm/Windows Server 2003 Enterprise x64 Edition.vmx'
-puts Vixen.local_connect.open_vm(path).current_snapshot
+puts Vixen.local_connect.open_vm(path).current_snapshot.full_name
 ```
 
 Limitations

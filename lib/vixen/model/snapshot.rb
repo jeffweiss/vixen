@@ -11,6 +11,17 @@ class Vixen::Model::Snapshot < Vixen::Model::Base
     @description = get_string_property VixPropertyId[:snapshot_description]
   end
 
+  def parent
+    return @parent unless @parent.nil?
+    parent_handle = Vixen::Bridge.get_parent handle
+    @parent = parent_handle == VixHandle[:invalid] ? nil : self.class.new(parent_handle)
+  end
+
+  def full_name
+    root = parent ? parent.full_name : File::SEPARATOR
+    File.join(root, display_name)
+  end
+
   def to_s
     display_name
   end

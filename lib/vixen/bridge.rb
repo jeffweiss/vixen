@@ -25,6 +25,7 @@ module Vixen::Bridge
   attach_function :Vix_GetProperties, [:handle, :int, :varargs], :int
   attach_function :Vix_FreeBuffer, [:pointer], :void
   attach_function :VixVM_GetCurrentSnapshot, [:handle, :pointer], :int
+  attach_function :VixSnapshot_GetParent, [:handle, :pointer], :int
 
   def self.connect(hostType, hostname, port, username, password)
     job_handle = VixHandle[:invalid]
@@ -72,7 +73,7 @@ module Vixen::Bridge
 
     # FIXME: we seem to go into deadlock without this sleep
     # I'm not exactly sure why
-    sleep 0.1
+    sleep 0.5
     err = VixJob_Wait(job_handle, 
                       VixPropertyId[:none] )
 
@@ -113,6 +114,13 @@ module Vixen::Bridge
     snapshot_handle_pointer.write_int VixHandle[:invalid]
     err = VixVM_GetCurrentSnapshot(vm_handle, snapshot_handle_pointer)
     snapshot_handle = snapshot_handle_pointer.read_int
+  end
+
+  def self.get_parent(snapshot_handle)
+    snapshot_handle_pointer = FFI::MemoryPointer.new :int, 1
+    snapshot_handle_pointer.write_int VixHandle[:invalid]
+    err = VixSnapshot_GetParent(snapshot_handle, snapshot_handle_pointer)
+    parent_handle = snapshot_handle_pointer.read_int
   end
 
   def self.get_string_property(handle, property_id)

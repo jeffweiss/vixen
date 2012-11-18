@@ -43,6 +43,7 @@ module Vixen::Bridge
   attach_function :Vix_FreeBuffer, [:pointer], :void
   attach_function :VixVM_GetCurrentSnapshot, [:handle, :pointer], :int
   attach_function :VixSnapshot_GetParent, [:handle, :pointer], :int
+  attach_function :VixVM_PowerOn, [:handle, :int, :handle, :VixEventProc, :pointer], :handle
 
   def self.connect(hostType, hostname, port, username, password)
     job_handle = VixHandle[:invalid]
@@ -159,6 +160,20 @@ module Vixen::Bridge
     value = string.read_string.force_encoding("UTF-8").dup
     Vix_FreeBuffer(string)
     return value
+  end
+
+  def self.power_on(vm_handle)
+    job_handle = VixVM_PowerOn(vm_handle,
+                               0,
+                               VixHandle[:invalid],
+                               nil,
+                               nil)
+    err = VixJob_Wait(job_handle, VixPropertyId[:none])
+    unless err == VixError[:ok]
+      raise "couldn't power on VM. (error: %s, %s)" %
+        [err, Vix_GetErrorText(err, nil)]
+    end
+    Vix_ReleaseHandle(job_handle)
   end
 
 end

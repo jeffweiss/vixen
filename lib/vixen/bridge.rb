@@ -45,6 +45,7 @@ module Vixen::Bridge
   attach_function :VixSnapshot_GetParent, [:handle, :pointer], :int
   attach_function :VixVM_PowerOn, [:handle, :int, :handle, :VixEventProc, :pointer], :handle
   attach_function :VixVM_CreateSnapshot, [:handle, :string, :string, :int, :handle, :VixEventProc, :pointer], :handle
+  attach_function :VixJob_CheckCompletion, [:handle, :pointer], :int
 
   def self.connect(hostType, hostname, port, username, password)
     job_handle = VixHandle[:invalid]
@@ -90,6 +91,10 @@ module Vixen::Bridge
     pointer_to :int, &block
   end
 
+  def self.pointer_to_bool(&block)
+    (pointer_to :int, &block) != 0
+  end
+
   def self.wait_for_async_job(operation, &block)
     job_handle = yield
     err = VixJob_Wait job_handle, VixPropertyId[:none]
@@ -131,10 +136,11 @@ module Vixen::Bridge
                                    collect_proc,
                                    nil)
 
-    # FIXME: we seem to go into deadlock without this sleep
-    # I'm not exactly sure why
-    sleep 0.5
-    err = VixJob_Wait job_handle, VixPropertyId[:none]
+    while ( not pointer_to_bool do |bool_pointer|
+      sleep 0.01
+      VixJob_CheckCompletion(job_handle, bool_pointer)
+    end) do
+    end
 
     Vix_ReleaseHandle job_handle
     available_vms

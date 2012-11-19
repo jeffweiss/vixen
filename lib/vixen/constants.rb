@@ -112,4 +112,7 @@ module Vixen::Constants
                         :blocked_on_msg, 0x0100,
                         :paused,         0x0200,
                         :resuming,       0x0800 )
+
+  VixCreateSnapshotOptions = enum( :include_memory, 0x0002 )
+
 end

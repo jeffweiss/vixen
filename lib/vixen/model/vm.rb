@@ -7,6 +7,10 @@ class Vixen::Model::VM < Vixen::Model::Base
     Vixen::Model::Snapshot.new(Vixen::Bridge.current_snapshot(handle))
   end
 
+  def create_snapshot(name, description)
+    Vixen::Model::Snapshot.new(Vixen::Bridge.create_snapshot handle, name, description)
+  end
+
   def power_on
     return self if powered_on? or powering_on? or resuming? or resetting?
     Vixen::Bridge.power_on handle

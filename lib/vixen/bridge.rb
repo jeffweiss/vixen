@@ -44,6 +44,7 @@ module Vixen::Bridge
   attach_function :VixVM_GetCurrentSnapshot, [:handle, :pointer], :int
   attach_function :VixSnapshot_GetParent, [:handle, :pointer], :int
   attach_function :VixVM_PowerOn, [:handle, :int, :handle, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_CreateSnapshot, [:handle, :string, :string, :int, :handle, :VixEventProc, :pointer], :handle
 
   def self.connect(hostType, hostname, port, username, password)
     job_handle = VixHandle[:invalid]
@@ -99,6 +100,20 @@ module Vixen::Bridge
     Vix_ReleaseHandle job_handle
   end
 
+  def self.wait_for_async_handle_creation_job(operation, pointer_to_handle, &block)
+    job_handle = yield
+    sleep 0.5
+    err = VixJob_Wait job_handle, VixPropertyId[:job_result_handle],
+                :pointer, pointer_to_handle,
+                :int, VixPropertyId[:none]
+    unless err == VixError[:ok]
+      raise "couldn't %s. (error: %s, %s)" %
+        [operation, err, Vix_GetErrorText(err, nil)]
+    end
+    Vix_ReleaseHandle job_handle
+    err
+  end
+
   def self.running_vms(host_handle)
     available_vms = []
 
@@ -134,20 +149,22 @@ module Vixen::Bridge
   end
 
   def self.open_vm(host_handle, vm_path)
-    job_handle = VixHost_OpenVM(host_handle,
-                                vm_path,
-                                VixVMOpenOptions[:normal],
-                                VixHandle[:invalid],
-                                nil,
-                                nil)
     vm_handle = pointer_to_handle do |vm_handle_pointer|
-      VixJob_Wait(job_handle,
-                  VixPropertyId[:job_result_handle],
-                  :pointer, vm_handle_pointer,
-                  :int, VixPropertyId[:none])
+      wait_for_async_handle_creation_job "open vm", vm_handle_pointer do
+        VixHost_OpenVM host_handle, vm_path, VixVMOpenOptions[:normal],
+                       VixHandle[:invalid], nil, nil
+      end
     end
-    Vix_ReleaseHandle job_handle
-    vm_handle
+  end
+
+  def self.create_snapshot(vm_handle, name, description)
+    snapshot_handle = pointer_to_handle do |snapshot_handle_pointer|
+      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer do
+        VixVM_CreateSnapshot vm_handle, name, description,
+                             VixCreateSnapshotOptions[:include_memory],
+                             VixHandle[:invalid], nil, nil
+      end
+    end
   end
 
   def self.current_snapshot(vm_handle)

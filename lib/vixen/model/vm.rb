@@ -8,7 +8,7 @@ class Vixen::Model::VM < Vixen::Model::Base
   end
 
   def power_on
-    return self if powered_on? or powering_on? or resuming?
+    return self if powered_on? or powering_on? or resuming? or resetting?
     Vixen::Bridge.power_on handle
     self
   end
@@ -58,6 +58,10 @@ class Vixen::Model::VM < Vixen::Model::Base
 
   def suspended?
     current_power_states.include? :suspended
+  end
+
+  def resetting?
+    current_power_states.include? :resetting
   end
 
   def current_power_states

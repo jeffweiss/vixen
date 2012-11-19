@@ -28,6 +28,7 @@ Capabilities
  * View running VMs
  * Control power state (on, off, suspend, reset) of VMs
  * Viewing the current snapshot
+ * Creating snapshots
 
 Limitations
 -----------

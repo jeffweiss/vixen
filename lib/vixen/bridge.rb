@@ -73,7 +73,7 @@ module Vixen::Bridge
     pointer = FFI::MemoryPointer.new type, 1
     err = yield pointer
     unless err == VixError[:ok]
-      raise "problem executing pointer_to_handle block. (error: %s, %s)" %
+      raise "problem executing pointer_to_#{type} block. (error: %s, %s)" %
         [err, Vix_GetErrorText(err, nil)]
     end
     pointer.send "read_#{type}".to_sym
@@ -119,7 +119,15 @@ module Vixen::Bridge
     err
   end
 
-  def self.running_vms(host_handle)
+  def self.spin_until_job_complete(job_handle)
+    while ( not pointer_to_bool do |bool_pointer|
+      sleep 0.1
+      VixJob_CheckCompletion(job_handle, bool_pointer)
+    end) do
+    end
+  end
+
+  def self.running_vms(host_handle, &block)
     available_vms = []
 
     collect_proc = Proc.new do |job_handle, event_type, more_event_info, client_data|
@@ -127,6 +135,7 @@ module Vixen::Bridge
         path = get_string_property more_event_info, VixPropertyId[:found_item_location]
         available_vms << path if path
       end
+      block.call job_handle, event_type, more_event_info, client_data if block_given?
     end
 
     job_handle = VixHost_FindItems(host_handle,
@@ -135,12 +144,7 @@ module Vixen::Bridge
                                    -1,
                                    collect_proc,
                                    nil)
-
-    while ( not pointer_to_bool do |bool_pointer|
-      sleep 0.01
-      VixJob_CheckCompletion(job_handle, bool_pointer)
-    end) do
-    end
+    spin_until_job_complete job_handle
 
     Vix_ReleaseHandle job_handle
     available_vms

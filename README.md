@@ -8,6 +8,9 @@ $ gem install vixen
 Running Vixen
 =============
 
+Currently, the `vixen` executable only lists the currently running virtual
+machines. Much work on the executable remains.
+
 ```shell
 [~]$ vixen
 [00:00:00] Connecting to local host

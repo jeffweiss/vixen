@@ -7,32 +7,48 @@ class Vixen::Model::VM < Vixen::Model::Base
     Vixen::Model::Snapshot.new(Vixen::Bridge.current_snapshot(handle))
   end
 
-  def create_snapshot(name, description)
-    Vixen::Model::Snapshot.new(Vixen::Bridge.create_snapshot handle, name, description)
+  def create_snapshot(name, description="", &block)
+    Vixen::Model::Snapshot.new(Vixen::Bridge.create_snapshot handle, name, description, &block)
   end
 
-  def power_on
+  def power_on(&block)
     return self if powered_on? or powering_on? or resuming? or resetting?
-    Vixen::Bridge.power_on handle
+    Vixen::Bridge.power_on handle, &block
     self
   end
 
-  def resume
-    power_on
+  def resume(&block)
+    power_on &block
   end
 
-  def suspend
-    Vixen::Bridge.suspend handle
+  def suspend(&block)
+    Vixen::Bridge.suspend handle, &block
     self
   end
 
-  def power_off
-    Vixen::Bridge.power_off handle
+  def power_off(opts={}, &block)
+    hard_power_off = opts[:hard] || :if_necessary
+    case hard_power_off
+    when :if_necessary
+      Vixen::Bridge.power_off_using_guest(handle, &block) || Vixen::Bridge.power_off(handle, &block)
+    when :always
+      Vixen::Bridge.power_off(handle, &block)
+    else
+      Vixen::Bridge.power_off_using_guest(handle, &block)
+    end
     self
   end
 
-  def reset
-    Vixen::Bridge.reset handle
+  def reset(opts={}, &block)
+    hard_reset = opts[:hard] || :if_necessary
+    case hard_reset
+    when :if_necessary
+      Vixen::Bridge.reset_using_guest(handle, &block) || Vixen::Bridge.reset(handle, &block)
+    when :always
+      Vixen::Bridge.reset(handle, &block)
+    else
+      Vixen::Bridge.reset_using_guest(handle, &block)
+    end
     self
   end
 

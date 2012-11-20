@@ -42,11 +42,28 @@ module Vixen::Bridge
   attach_function :VixVM_GetCurrentSnapshot, [:handle, :pointer], :int
   attach_function :VixSnapshot_GetParent, [:handle, :pointer], :int
   attach_function :VixVM_PowerOn, [:handle, :int, :handle, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_PowerOff, [:handle, :int, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_Reset, [:handle, :int, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_Suspend, [:handle, :int, :VixEventProc, :pointer], :handle
   attach_function :VixVM_CreateSnapshot, [:handle, :string, :string, :int, :handle, :VixEventProc, :pointer], :handle
   attach_function :VixJob_CheckCompletion, [:handle, :pointer], :int
   attach_function :Vix_GetHandleType, [:handle], :int
 
-  def self.connect(hostType, hostname, port, username, password)
+  @@all_my_blocks = []
+
+  def self.safe_proc_from_block(&block)
+    return nil unless block_given?
+    Proc.new do |*args|
+      begin
+        block.call args
+      rescue
+        puts STDERR, $!
+      end
+    end
+  end
+
+  def self.connect(hostType, hostname, port, username, password, &block)
+    progress_proc = safe_proc_from_block &block
     hostname = "https://%s%s/sdk" % [hostname, port == 0 ? '' : ":#{port}"] if hostname
     Vixen.logger.info "connecting to %s with username %s" % [hostname.inspect, username.inspect]
     job = Vixen::Model::Job.new(VixHost_Connect(VixApiVersion[:api_version],
@@ -57,10 +74,11 @@ module Vixen::Bridge
                                  password,
                                  0,
                                  VixHandle[:invalid],
-                                 nil,
+                                 progress_proc,
                                  nil))
+    spin_until_job_complete("connect to host", job)
     pointer_to_handle do |host_handle_pointer|
-      Vixen.logger.debug "waiting for connection to complete"
+      Vixen.logger.debug "getting handle from connection job"
       VixJob_Wait job.handle, VixPropertyId[:job_result_handle],
                   :pointer, host_handle_pointer,
                   :int, VixPropertyId[:none]
@@ -93,10 +111,11 @@ module Vixen::Bridge
     (pointer_to :int, &block) != 0
   end
 
-  def self.wait_for_async_job(operation, &block)
+  def self.wait_for_async_job(operation, initial_sleep_time = 0.1, sleep_increment = 0.02, &block)
     job = Vixen::Model::Job.new(yield)
     Vixen.logger.debug "Waiting for async %s job (%s)" %
       [operation, job.handle]
+    spin_until_job_complete(operation, job, initial_sleep_time, sleep_increment)
     err = VixJob_Wait job.handle, VixPropertyId[:none]
     unless err == VixError[:ok]
       Vixen.logger.error "While executing %s VIX API returned error: %s: %s" %
@@ -106,10 +125,11 @@ module Vixen::Bridge
     end
   end
 
-  def self.wait_for_async_handle_creation_job(operation, pointer_to_handle, &block)
+  def self.wait_for_async_handle_creation_job(operation, pointer_to_handle, initial_sleep_time = 0.1, sleep_increment = 0.02, &block)
     job = Vixen::Model::Job.new(yield)
     Vixen.logger.debug "Waiting for async %s job (%s) to create a new handle" %
       [operation, job.handle]
+    spin_until_job_complete(operation, job, initial_sleep_time, sleep_increment)
     err = VixJob_Wait job.handle, VixPropertyId[:job_result_handle],
                 :pointer, pointer_to_handle,
                 :int, VixPropertyId[:none]
@@ -122,15 +142,20 @@ module Vixen::Bridge
     err
   end
 
-  def self.spin_until_job_complete(operation, job)
+  def self.spin_until_job_complete(operation, job, initial_sleep_time = 0.1, sleep_increment = 0.02)
+    sleep_time = initial_sleep_time
     while ( not pointer_to_bool do |bool_pointer|
       Vixen.logger.debug "sleeping waiting for %s job (%s) to complete" %
         [operation, job.handle]
-      sleep 0.01
+      sleep sleep_time
+      sleep_time += sleep_increment
       Vixen.logger.debug "checking completion of %s job (%s)" %
         [operation, job.handle]
-      thr = Thread.start { VixJob_CheckCompletion(job.handle, bool_pointer) }
-      thr.value
+      thr = Thread.start { sleep 0.01; VixJob_CheckCompletion(job.handle, bool_pointer) }
+      Vixen.logger.debug "waiting for thread to complete"
+      x = thr.value
+      Vixen.logger.debug "thread completed with #{x}"
+      x
     end) do
     end
   end
@@ -138,7 +163,7 @@ module Vixen::Bridge
   def self.running_vms(host_handle, &block)
     available_vms = []
 
-    collect_proc = Proc.new do |job_handle, event_type, more_event_info, client_data|
+    collect_proc = safe_proc_from_block do |job_handle, event_type, more_event_info, client_data|
       if event_type == VixEventType[:find_item]
         path = get_string_property more_event_info, VixPropertyId[:found_item_location]
         if path
@@ -176,23 +201,25 @@ module Vixen::Bridge
     Vix_ReleaseHandle handle
   end
 
-  def self.open_vm(host_handle, vm_path)
+  def self.open_vm(host_handle, vm_path, &block)
+    progress_proc = safe_proc_from_block &block
     vm_handle = pointer_to_handle do |vm_handle_pointer|
       wait_for_async_handle_creation_job "open vm", vm_handle_pointer do
         Vixen.logger.info "opening %s" % vm_path
         VixHost_OpenVM host_handle, vm_path, VixVMOpenOptions[:normal],
-                       VixHandle[:invalid], nil, nil
+                       VixHandle[:invalid], progress_proc, nil
       end
     end
   end
 
-  def self.create_snapshot(vm_handle, name, description)
+  def self.create_snapshot(vm_handle, name, description, &block)
+    progress_proc = safe_proc_from_block &block
     snapshot_handle = pointer_to_handle do |snapshot_handle_pointer|
-      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer do
+      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer, 2, 0.5 do
         Vixen.logger.info "creating %s snapshot" % name
         VixVM_CreateSnapshot vm_handle, name, description,
                              VixCreateSnapshotOptions[:include_memory],
-                             VixHandle[:invalid], nil, nil
+                             VixHandle[:invalid], progress_proc, nil
       end
     end
   end
@@ -232,31 +259,61 @@ module Vixen::Bridge
     end
   end
 
-  def self.power_on(vm_handle)
+  def self.power_on(vm_handle, &block)
+    progress_proc = safe_proc_from_block &block
     wait_for_async_job "power on VM" do
       Vixen.logger.debug "powering on vm (%s)" % vm_handle
-      VixVM_PowerOn vm_handle, VixVMPowerOptions[:normal], VixHandle[:invalid], nil, nil
+      VixVM_PowerOn vm_handle, VixVMPowerOptions[:normal], VixHandle[:invalid], progress_proc, nil
     end
   end
 
-  def self.power_off(vm_handle)
+  def self.power_off_using_guest(vm_handle, &block)
+    begin
+      progress_proc = safe_proc_from_block &block
+      wait_for_async_job "power off VM using tools" do
+        Vixen.logger.debug "powering off vm (%s)" % vm_handle
+        VixVM_PowerOff vm_handle, VixVMPowerOptions[:from_guest], progress_proc, nil
+      end
+      true
+    rescue
+      false
+    end
+  end
+
+  def self.power_off(vm_handle, &block)
+    progress_proc = safe_proc_from_block &block
     wait_for_async_job "power off VM" do
       Vixen.logger.debug "powering off vm (%s)" % vm_handle
-      VixVM_PowerOff vm_handle, VixVMPowerOptions[:normal], nil, nil
+      VixVM_PowerOff vm_handle, VixVMPowerOptions[:normal], progress_proc, nil
     end
   end
 
-  def self.reset(vm_handle)
+  def self.reset_using_guest(vm_handle, &block)
+    begin
+      progress_proc = safe_proc_from_block &block
+      wait_for_async_job "reset VM using tools" do
+        Vixen.logger.debug "resetting vm (%s)" % vm_handle
+        VixVM_Reset vm_handle, VixVMPowerOptions[:from_guest], progress_proc, nil
+      end
+      true
+    rescue
+      false
+    end
+  end
+
+  def self.reset(vm_handle, &block)
+    progress_proc = safe_proc_from_block &block
     wait_for_async_job "reset VM" do
       Vixen.logger.debug "resetting vm (%s)" % vm_handle
-      VixVM_Reset vm_handle, VixVMPowerOptions[:normal], nil, nil
+      VixVM_Reset vm_handle, VixVMPowerOptions[:normal], progress_proc, nil
     end
   end
 
-  def self.suspend(vm_handle)
+  def self.suspend(vm_handle, &block)
+    progress_proc = safe_proc_from_block &block
     wait_for_async_job "suspend VM" do
       Vixen.logger.debug "suspending vm (%s)" % vm_handle
-      VixVM_Suspend vm_handle, VixVMPowerOptions[:normal], nil, nil
+      VixVM_Suspend vm_handle, VixVMPowerOptions[:normal], progress_proc, nil
     end
   end
 

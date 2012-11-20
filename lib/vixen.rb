@@ -4,12 +4,12 @@ module Vixen
 
   @@logger = nil
 
-  def self.local_connect(login = nil, password = nil)
-    connect Vixen::Constants::VixServiceProvider[:vmware_workstation], nil, 0, login, password
+  def self.local_connect(login = nil, password = nil, &block)
+    connect Vixen::Constants::VixServiceProvider[:vmware_workstation], nil, 0, login, password, &block
   end
 
-  def self.connect(host_type, hostname, port, username, password)
-    handle = Vixen::Bridge.connect(host_type, hostname, port, username, password)
+  def self.connect(host_type, hostname, port, username, password, &block)
+    handle = Vixen::Bridge.connect(host_type, hostname, port, username, password, &block)
     Vixen::Model::Host.new(handle)
   end
 

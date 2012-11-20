@@ -35,7 +35,7 @@ class Vixen::CommandLine
   end
 
   def print(message, *args)
-    timed_message = "\r#{elapsed_time} " + message
+    timed_message = "\r             \r#{elapsed_time} " + message
     $stdout.print timed_message, args
     $stdout.flush
   end

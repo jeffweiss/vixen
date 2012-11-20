@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'vixen'
-  s.version = '0.0.7'
+  s.version = '0.0.8'
   s.summary = 'Ruby bindings for VMware VIX API'
   s.description = <<-EOF
   Vixen is an easy way to interact with VMware virtual machines from Ruby. 

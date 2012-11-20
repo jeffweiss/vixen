@@ -11,6 +11,14 @@ class Vixen::Model::VM < Vixen::Model::Base
     Vixen::Model::Snapshot.new(Vixen::Bridge.create_snapshot handle, name, description, &block)
   end
 
+  def revert_to_snapshot(snapshot, &block)
+    Vixen::Bridge.revert_to_snapshot self, snapshot, &block
+  end
+
+  def remove_snapshot(snapshot, &block)
+    Vixen::Bridge.remove_snaphost self, snapshot, &block
+  end
+
   def power_on(&block)
     return self if powered_on? or powering_on? or resuming? or resetting?
     Vixen::Bridge.power_on handle, &block

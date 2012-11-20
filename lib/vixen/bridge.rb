@@ -46,6 +46,8 @@ module Vixen::Bridge
   attach_function :VixVM_Reset, [:handle, :int, :VixEventProc, :pointer], :handle
   attach_function :VixVM_Suspend, [:handle, :int, :VixEventProc, :pointer], :handle
   attach_function :VixVM_CreateSnapshot, [:handle, :string, :string, :int, :handle, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_RevertToSnapshot, [:handle, :handle, :int, :handle, :VixEventProc, :pointer], :handle
+  attach_function :VixVM_RemoveSnapshot, [:handle, :handle, :int, :VixEventProc, :pointer], :handle
   attach_function :VixJob_CheckCompletion, [:handle, :pointer], :int
   attach_function :Vix_GetHandleType, [:handle], :int
 
@@ -215,12 +217,27 @@ module Vixen::Bridge
   def self.create_snapshot(vm_handle, name, description, &block)
     progress_proc = safe_proc_from_block &block
     snapshot_handle = pointer_to_handle do |snapshot_handle_pointer|
-      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer, 2, 0.5 do
+      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer, 1, 0.2 do
         Vixen.logger.info "creating %s snapshot" % name
         VixVM_CreateSnapshot vm_handle, name, description,
                              VixCreateSnapshotOptions[:include_memory],
                              VixHandle[:invalid], progress_proc, nil
       end
+    end
+  end
+
+  def self.revert_to_snapshot(vm, snapshot, &block)
+    progress_proc = safe_proc_from_block &block
+    wait_for_async_job(("revert to %s snapshot" % snapshot.display_name), 1, 0.2) do
+      VixVM_RevertToSnapshot vm.handle, snapshot.handle, VixVMPowerOptions[:normal],
+                             VixHandle[:invalid], progress_proc, nil
+    end
+  end
+
+  def self.remove_snapshot(vm, snapshot, &block)
+    progress_proc = safe_proc_from_block &block
+    wait_for_async_job(("remove %s snapshot" % snapshot.display_name), 1, 0.2) do
+      VixVM_RemoveSnapshot vm.handle, snapshot.handle, 0, progress_proc, nil
     end
   end
 
@@ -245,7 +262,7 @@ module Vixen::Bridge
                         :pointer, string_pointer,
                         :int, VixPropertyId[:none])
     end
-    value = string.read_string.force_encoding("UTF-8").dup
+    value = string.read_string.dup
     Vix_FreeBuffer(string)
     return value
   end

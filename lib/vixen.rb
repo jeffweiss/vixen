@@ -10,6 +10,13 @@ module Vixen
     Vixen::Model::Host.new(handle)
   end
 
+  def self.logger
+    return @@logger unless @@logger.nil?
+    require 'logger'
+    @@logger ||= Logger.new STDOUT
+    @@logger.level = Logger::WARN
+  end
+
 end
 
 $:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])

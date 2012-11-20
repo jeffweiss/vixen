@@ -36,26 +36,222 @@
 <div class="highlight"><pre><span class="nv">$ </span>gem install vixen
 </pre></div>
 
-<h1>Using Vixen</h1>
+<h1>Running Vixen</h1>
+
+<p>Currently, the <code>vixen</code> executable only lists the currently running virtual
+machines. Much work on the executable remains.</p>
+
+<div class="highlight"><pre><span class="o">[</span>~<span class="o">]</span><span class="nv">$ </span>vixen
+<span class="o">[</span>00:00:00<span class="o">]</span> Connecting to <span class="nb">local </span>host
+<span class="o">[</span>00:00:00<span class="o">]</span> centos-5.8-pe-2.5.3-vmware.vmx
+<span class="o">[</span>00:00:01<span class="o">]</span> CentOS 5.6 64-bit.vmx
+<span class="o">[</span>00:00:01<span class="o">]</span> Found 2 running virtual machines
+</pre></div>
+
+<h1>Library Usage</h1>
+
+<h2>Capabilities</h2>
+
+<ul>
+<li>View running VMs</li>
+<li>Control power state (on, off, suspend, reset) of VMs</li>
+<li>Viewing the current snapshot</li>
+<li>Creating snapshots</li>
+</ul><h2>Limitations</h2>
+
+<p>Vixen currently only supports running on Mac OS X or Linux.</p>
+
+<p>Windows support will require two libraries; one each from the 32-bit and 64-bit
+versions of the Windows VMware VIX SDK. These will need to be placed into 
+<code>ext/windows/i386</code> and <code>ext/windows/x86_64</code> respectively, and <code>Vixen::Bridge</code>
+will use <a href="https://github.com/puppetlabs/facter">Facter</a> to determine which
+operating system and architecture version of the library to load.</p>
+
+<h2>Connecting to a host</h2>
+
+<p>If using Vixen on the same machine as the virtual machine host, you can simply
+use <code>Vixen.local_connect</code></p>
 
 <div class="highlight"><pre><span class="nb">require</span> <span class="s1">'vixen'</span>
 
-<span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span><span class="o">.</span><span class="n">running_vms</span><span class="o">.</span><span class="n">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">vm</span><span class="o">|</span> <span class="nb">puts</span> <span class="s2">"Current Snapshot: </span><span class="si">#{</span><span class="n">vm</span><span class="o">.</span><span class="n">current_snapshot</span><span class="si">}</span><span class="s2">"</span> <span class="p">}</span>
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span>
 </pre></div>
+
+<p>If using Vixen to connect to a remote host (VMware Server, ESXi, vSphere, etc),
+use <code>Vixen.connect</code></p>
+
+<div class="highlight"><pre><span class="nb">require</span> <span class="s1">'vixen'</span>
+
+<span class="n">server_type</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">::</span><span class="no">Constants</span><span class="o">::</span><span class="no">VixServiceProvider</span><span class="o">[</span><span class="ss">:vmware_vi_server</span><span class="o">]</span>
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">connect</span> <span class="n">server_type</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">hostname</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">port</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">username</span><span class="o">&gt;</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">password</span><span class="o">&gt;</span>
+</pre></div>
+
+<p>Both of these will return a <code>Vixen::Model::Host</code> object.</p>
+
+<h1>Vixen::Model::Host</h1>
+
+<p><code>Host</code> currently supports the following actions:</p>
+
+<ul>
+<li><code>open_vm</code></li>
+<li><code>running_vms</code></li>
+<li><code>paths_of_running_vms</code></li>
+</ul><h2>Currently running virtual machines</h2>
+
+<div class="highlight"><pre><span class="nb">require</span> <span class="s1">'vixen'</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span>
+<span class="n">machines</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">running_vms</span>
+
+<span class="n">machines</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">vm</span><span class="o">|</span>
+  <span class="nb">puts</span> <span class="s2">"Current Snapshot: </span><span class="si">#{</span><span class="n">vm</span><span class="o">.</span><span class="n">current_snapshot</span><span class="si">}</span><span class="s2">"</span>
+<span class="k">end</span>
+</pre></div>
+
+<h2>Opening a virtual machine</h2>
+
+<p>Opening a virtual machine does not <em>start</em> the virtual machine, but creates
+an object that you can use to interrogate properties of the virtual machine.
+The virtual machine <em>could</em> be started by using this object, (see 
+<code>Vixen::Model::VM#power_on</code>).</p>
 
 <p>Vixen can also be used on virtual machines that are not currently active:</p>
 
 <div class="highlight"><pre><span class="nb">require</span> <span class="s1">'vixen'</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span>
+
 <span class="n">path</span> <span class="o">=</span> <span class="s1">'/Users/jeff/Documents/Virtual Machines/win2003sat.vmwarevm/Windows Server 2003 Enterprise x64 Edition.vmx'</span>
-<span class="nb">puts</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span><span class="o">.</span><span class="n">open_vm</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">current_snapshot</span><span class="o">.</span><span class="n">full_name</span>
+
+<span class="n">vm</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">open_vm</span> <span class="n">path</span>
+
+<span class="nb">puts</span> <span class="n">vm</span><span class="o">.</span><span class="n">current_snapshot</span>
 </pre></div>
 
-<h2>Limitations</h2>
+<h2>Paths of running virtual machines</h2>
 
-<p>Vixen currently only supports VMware Fusion 5.
-It also only lists the current snapshot of each of the running virtual machines.</p>
+<p>If all you are interested is the path (of the <code>.vmx</code> file) of the running
+virtual machines, you may use <code>paths_of_running_vms</code>, which is much lighter
+weight than <code>running_vms</code>.</p>
 
-<h2>See Also</h2>
+<div class="highlight"><pre><span class="nb">require</span> <span class="s1">'vixen'</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span>
+
+<span class="n">paths</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">paths_of_running_vms</span>
+
+<span class="n">paths</span><span class="o">.</span><span class="n">each</span> <span class="k">do</span> <span class="o">|</span><span class="n">path</span><span class="o">|</span>
+  <span class="nb">puts</span> <span class="s2">"Currently running: </span><span class="si">#{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span>
+<span class="k">end</span>
+</pre></div>
+
+<h1>Vixen::Model::VM</h1>
+
+<p><code>VM</code> currently supports the following actions:</p>
+
+<ul>
+<li><code>current_snapshot</code></li>
+<li><code>create_snapshot</code></li>
+<li><code>revert_to_snapshot</code></li>
+<li><code>remove_snapshot</code></li>
+<li>Power Operations
+
+<ul>
+<li><code>power_on</code></li>
+<li><code>power_off</code></li>
+<li><code>suspend</code></li>
+<li><code>resume</code></li>
+<li><code>reset</code></li>
+</ul>
+</li>
+<li>Querying current power state
+
+<ul>
+<li><code>powered_off?</code></li>
+<li><code>suspended?</code></li>
+<li><code>powered_on?</code></li>
+<li>
+<code>current_power_states</code> - a VM may be concurrently have multiple power states</li>
+</ul>
+</li>
+</ul><h1>Vixen::Model::Snapshot</h1>
+
+<p><code>Snapshot</code> currently supports the following actions:</p>
+
+<ul>
+<li>
+<code>display_name</code> - the short text title given to a snapshot</li>
+<li>
+<code>description</code> - the lengthy text, if any, given to a snapshot</li>
+<li>
+<code>parent</code> - the parent snapshot, if any</li>
+<li>
+<code>full_name</code> - the full name of the snapshot (traverses parent hierarchy)</li>
+</ul><h1>Progress Callbacks</h1>
+
+<p>The VIX API allows for progress callbacks which Vixen exposes through the use
+of blocks passed to the method.</p>
+
+<div class="highlight"><pre><span class="nb">require</span> <span class="s1">'rubygems'</span>
+<span class="nb">require</span> <span class="s1">'vixen'</span>
+
+<span class="c1">#Vixen.logger.level = Logger::DEBUG</span>
+<span class="n">start</span> <span class="o">=</span> <span class="no">Time</span><span class="o">.</span><span class="n">now</span>
+
+<span class="k">def</span> <span class="nf">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+  <span class="s2">"[%s]"</span> <span class="o">%</span> <span class="p">(</span><span class="no">Time</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">utc</span><span class="o">.</span><span class="n">strftime</span> <span class="s1">'%T'</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">host</span> <span class="o">=</span> <span class="no">Vixen</span><span class="o">.</span><span class="n">local_connect</span>
+
+<span class="n">vm</span> <span class="o">=</span> <span class="n">host</span><span class="o">.</span><span class="n">open_vm</span> <span class="s1">'/Users/jeff/Desktop/centos-5.8-pe-2.5.3-vmware/centos-5.8-pe-2.5.3-vmware.vmx'</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+  <span class="nb">print</span> <span class="s2">"</span><span class="se">\r</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> waiting for my vm to open"</span>
+  <span class="vg">$stdout</span><span class="o">.</span><span class="n">flush</span>
+<span class="k">end</span>
+
+<span class="n">vm</span><span class="o">.</span><span class="n">resume</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+  <span class="nb">print</span> <span class="s2">"</span><span class="se">\r</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> resuming..."</span>
+  <span class="vg">$stdout</span><span class="o">.</span><span class="n">flush</span>
+<span class="k">end</span>
+<span class="nb">puts</span>
+
+<span class="n">previous_snapshot</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">current_snapshot</span>
+
+<span class="nb">puts</span> <span class="s2">"</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> previous_snapshot: </span><span class="si">#{</span><span class="n">previous_snapshot</span><span class="si">}</span><span class="s2">"</span>
+
+<span class="n">snapshot_name</span> <span class="o">=</span> <span class="s2">"vixen-created </span><span class="si">#{</span><span class="no">Time</span><span class="o">.</span><span class="n">now</span><span class="si">}</span><span class="s2">"</span>
+<span class="n">new_snapshot</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">create_snapshot</span> <span class="n">snapshot_name</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+  <span class="nb">print</span> <span class="s2">"</span><span class="se">\r</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> creating snapshot: </span><span class="si">#{</span><span class="n">snapshot_name</span><span class="si">}</span><span class="s2">"</span>
+  <span class="vg">$stdout</span><span class="o">.</span><span class="n">flush</span>
+<span class="k">end</span>
+<span class="nb">puts</span>
+
+<span class="n">vm</span><span class="o">.</span><span class="n">revert_to_snapshot</span> <span class="n">previous_snapshot</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+  <span class="nb">print</span> <span class="s2">"</span><span class="se">\r</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> reverting to </span><span class="si">#{</span><span class="n">previous_snapshot</span><span class="si">}</span><span class="s2">..."</span>
+  <span class="vg">$stdout</span><span class="o">.</span><span class="n">flush</span>
+<span class="k">end</span>
+<span class="nb">puts</span>
+
+<span class="n">vm</span><span class="o">.</span><span class="n">suspend</span> <span class="k">do</span> <span class="o">|*</span><span class="n">args</span><span class="o">|</span>
+  <span class="nb">print</span> <span class="s2">"</span><span class="se">\r</span><span class="si">#{</span><span class="n">elapsed_time</span><span class="p">(</span><span class="n">start</span><span class="p">)</span><span class="si">}</span><span class="s2"> suspending..."</span>
+  <span class="vg">$stdout</span><span class="o">.</span><span class="n">flush</span>
+<span class="k">end</span>
+<span class="nb">puts</span>
+</pre></div>
+
+<p>produces output like</p>
+
+<div class="highlight"><pre><span class="nv">$ </span>ruby vixen-example.rb          
+<span class="o">[</span>00:00:00<span class="o">]</span> waiting <span class="k">for </span>my vm to open
+<span class="o">[</span>00:00:02<span class="o">]</span> resuming...
+<span class="o">[</span>00:00:02<span class="o">]</span> previous_snapshot: vixen-created
+<span class="o">[</span>00:02:18<span class="o">]</span> creating snapshot: vixen-created Tue Nov 20 02:18:04 -0800 2012
+<span class="o">[</span>00:02:33<span class="o">]</span> reverting to vixen-created...
+<span class="o">[</span>00:02:36<span class="o">]</span> reverting to vixen-created...
+<span class="o">[</span>00:02:38<span class="o">]</span> suspending...
+</pre></div>
+
+<h1>See Also</h1>
 
 <ul>
 <li><a href="http://www.vmware.com/support/developer/vix-api/vix112_reference/">Official VMware VIX 1.12 documentation</a></li>

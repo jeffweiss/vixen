@@ -5,7 +5,6 @@ class Vixen::Model::Host < Vixen::Model::Base
   def self.finalize(handle)
     proc do
       Vixen::Bridge.disconnect(handle)
-      Vixen::Bridge.destroy(handle)
     end
   end
 

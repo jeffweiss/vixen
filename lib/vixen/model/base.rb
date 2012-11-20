@@ -1,12 +1,8 @@
 require File.join(File.dirname(__FILE__), '..', 'bridge')
-require File.join(File.dirname(__FILE__), '..', 'constants')
 
 module Vixen::Model; end
 
 class Vixen::Model::Base
-  extend Vixen::Constants
-  include Vixen::Constants
-
   attr_reader :handle
 
   def initialize(handle)

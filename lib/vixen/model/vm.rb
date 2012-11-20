@@ -75,7 +75,7 @@ class Vixen::Model::VM < Vixen::Model::Base
       :suspended, :tools_running, :resetting, :blocked_on_msg, :paused,
       :resuming
     ].each do |state|
-      states << state if ((bitwise_state & VixPowerState[state]) == VixPowerState[state])
+      states << state if ((bitwise_state & Vixen::Constants::VixPowerState[state]) == Vixen::Constants::VixPowerState[state])
     end
     states
   end

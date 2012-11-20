@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'vixen'
-  s.version = '0.0.9'
+  s.version = '0.0.10'
   s.date = '2012-11-20'
 
 

@@ -123,6 +123,8 @@ Vixen::Model::VM
 
  * `current_snapshot`
  * `create_snapshot`
+ * `revert_to_snapshot`
+ * `remove_snapshot`
  * Power Operations
    * `power_on`
    * `power_off`
@@ -145,7 +147,74 @@ Vixen::Model::Snapshot
  * `parent` - the parent snapshot, if any
  * `full_name` - the full name of the snapshot (traverses parent hierarchy)
 
+Progress Callbacks
+==================
+
+The VIX API allows for progress callbacks which Vixen exposes through the use
+of blocks passed to the method.
+
+```ruby
+require 'rubygems'
+require 'vixen'
+
+#Vixen.logger.level = Logger::DEBUG
+start = Time.now
+
+def elapsed_time(start)
+  "[%s]" % (Time.at(Time.now - start).utc.strftime '%T')
+end
+
+host = Vixen.local_connect
+
+vm = host.open_vm '/Users/jeff/Desktop/centos-5.8-pe-2.5.3-vmware/centos-5.8-pe-2.5.3-vmware.vmx' do |*args|
+  print "\r#{elapsed_time(start)} waiting for my vm to open"
+  $stdout.flush
+end
+
+vm.resume do |*args|
+  print "\r#{elapsed_time(start)} resuming..."
+  $stdout.flush
+end
+puts
+
+previous_snapshot = vm.current_snapshot
+
+puts "#{elapsed_time(start)} previous_snapshot: #{previous_snapshot}"
+
+snapshot_name = "vixen-created #{Time.now}"
+new_snapshot = vm.create_snapshot snapshot_name do |*args|
+  print "\r#{elapsed_time(start)} creating snapshot: #{snapshot_name}"
+  $stdout.flush
+end
+puts
+
+vm.revert_to_snapshot previous_snapshot do |*args|
+  print "\r#{elapsed_time(start)} reverting to #{previous_snapshot}..."
+  $stdout.flush
+end
+puts
+
+vm.suspend do |*args|
+  print "\r#{elapsed_time(start)} suspending..."
+  $stdout.flush
+end
+puts
+```
+
+produces output like
+
+```shell
+$ ruby vixen-example.rb          
+[00:00:00] waiting for my vm to open
+[00:00:02] resuming...
+[00:00:02] previous_snapshot: vixen-created
+[00:02:18] creating snapshot: vixen-created Tue Nov 20 02:18:04 -0800 2012
+[00:02:33] reverting to vixen-created...
+[00:02:36] reverting to vixen-created...
+[00:02:38] suspending...
+```
+
 See Also
---------
+========
 
  * [Official VMware VIX 1.12 documentation](http://www.vmware.com/support/developer/vix-api/vix112_reference/)

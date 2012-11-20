@@ -1,6 +1,9 @@
 Gem::Specification.new do |s|
   s.name = 'vixen'
-  s.version = '0.0.8'
+  s.version = '0.0.9'
+  s.date = '2012-11-20'
+
+
   s.summary = 'Ruby bindings for VMware VIX API'
   s.description = <<-EOF
   Vixen is an easy way to interact with VMware virtual machines from Ruby. 
@@ -9,7 +12,8 @@ Gem::Specification.new do |s|
 EOF
   s.author = 'Jeff Weiss'
   s.email = 'vixen-gem@jeffweiss.org'
-  s.files = `git ls-files`.split("\n")
+  s.executables = ['vixen']
+  s.files = ['bin/vixen'] + (`git ls-files`.split("\n"))
   s.require_paths = ['lib']
   s.platform = Gem::Platform::RUBY
   s.homepage = "https://github.com/jeffweiss/vixen"

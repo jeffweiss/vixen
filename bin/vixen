@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+
+require 'vixen/command_line'
+Vixen::CommandLine.new.execute

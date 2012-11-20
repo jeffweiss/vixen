@@ -5,6 +5,20 @@ Getting Vixen
 $ gem install vixen
 ```
 
+Running Vixen
+=============
+
+```shell
+[~]$ vixen
+[00:00:00] Connecting to local host
+[00:00:00] centos-5.8-pe-2.5.3-vmware.vmx
+[00:00:01] CentOS 5.6 64-bit.vmx
+[00:00:01] Found 2 running virtual machines
+```
+
+Library Usage
+=============
+
 Capabilities
 ------------
 
@@ -22,11 +36,6 @@ versions of the Windows VMware VIX SDK. These will need to be placed into
 `ext/windows/i386` and `ext/windows/x86_64` respectively, and `Vixen::Bridge`
 will use [Facter](https://github.com/puppetlabs/facter) to determine which
 operating system and architecture version of the library to load.
-
-
-Using Vixen
-===========
-
 
 Connecting to a host
 --------------------

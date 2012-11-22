@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name = 'vixen'
-  s.version = '0.0.11'
-  s.date = '2012-11-20'
+  s.version = '0.0.12'
+  s.date = '2012-11-22'
 
 
   s.summary = 'Ruby bindings for VMware VIX API'

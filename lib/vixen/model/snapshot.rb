@@ -22,6 +22,15 @@ class Vixen::Model::Snapshot < Vixen::Model::Base
     File.join(root, display_name)
   end
 
+  def children
+    Vixen::Bridge.get_children(handle)
+  end
+
+  def all_children
+    childs = children
+    (childs + childs.map {|child| child.all_children}).flatten
+  end
+
   def to_s
     display_name
   end

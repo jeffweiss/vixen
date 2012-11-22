@@ -50,8 +50,11 @@ module Vixen::Bridge
   attach_function :VixVM_RemoveSnapshot, [:handle, :handle, :int, :VixEventProc, :pointer], :handle
   attach_function :VixJob_CheckCompletion, [:handle, :pointer], :int
   attach_function :Vix_GetHandleType, [:handle], :int
-
-  @@all_my_blocks = []
+  attach_function :VixVM_GetNumRootSnapshots, [:handle, :pointer], :int
+  attach_function :VixVM_GetRootSnapshot, [:handle, :int, :pointer], :int
+  attach_function :VixVM_GetNamedSnapshot, [:handle, :string, :pointer], :int
+  attach_function :VixSnapshot_GetNumChildren, [:handle, :pointer], :int
+  attach_function :VixSnapshot_GetChild, [:handle, :int, :pointer], :int
 
   def self.safe_proc_from_block(&block)
     return nil unless block_given?
@@ -248,11 +251,36 @@ module Vixen::Bridge
     end
   end
 
+  def self.get_root_snapshots(vm_handle)
+    count = pointer_to_int { |int_pointer| VixVM_GetNumRootSnapshots(vm_handle, int_pointer) }
+    snapshots = []
+    count.times do |n|
+      handle = pointer_to_handle do |handle_pointer|
+        VixVM_GetRootSnapshot(vm_handle, n, handle_pointer)
+      end
+      snapshots << Vixen::Model::Snapshot.new( handle )
+    end
+    snapshots
+  end
+
   def self.get_parent(snapshot_handle)
     pointer_to_handle do |snapshot_handle_pointer|
       Vixen.logger.debug "retrieving snapshot parent"
       VixSnapshot_GetParent snapshot_handle, snapshot_handle_pointer
     end
+  end
+
+  def self.get_children(snapshot_handle)
+    count = pointer_to_int { |int_pointer| VixSnapshot_GetNumChildren(snapshot_handle, int_pointer) }
+    children = []
+    count.times do |n|
+      handle = pointer_to_handle do |handle_pointer|
+        VixSnapshot_GetChild(snapshot_handle, n, handle_pointer)
+      end
+      child = Vixen::Model::Snapshot.new( handle )
+      children << child
+    end
+    children
   end
 
   def self.get_string_property(handle, property_id)

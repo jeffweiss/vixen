@@ -3,8 +3,30 @@ require File.join(File.dirname(__FILE__), 'snapshot')
 
 class Vixen::Model::VM < Vixen::Model::Base
 
+  def name
+    get_string_property Vixen::Constants::VixPropertyId[:vm_name]
+  end
+
+  def path
+    get_string_property Vixen::Constants::VixPropertyId[:vmx_pathname]
+  end
+
+  def guest_os
+    get_string_property Vixen::Constants::VixPropertyId[:vm_guestos]
+  end
+
   def current_snapshot
     Vixen::Model::Snapshot.new(Vixen::Bridge.current_snapshot(handle))
+  end
+
+  def root_snapshots
+    Vixen::Bridge.get_root_snapshots handle
+  end
+
+  def all_snapshots
+    roots = root_snapshots
+    childs = roots.map {|s| s.all_children }
+    (roots + childs).flatten
   end
 
   def create_snapshot(name, description="", &block)

@@ -5,15 +5,20 @@ class Vixen::CommandLine
     command = ARGV.shift
     command ||= 'status'
 
-    begin
-      require "vixen/command_line/#{command}"
+    ARGV.unshift command
 
-      klass = self.class.const_get(command.split('_').map {|s| s.capitalize }.join)
-      raise "Couldn't find #{command}" unless klass
+    while ! ARGV.empty?
+      begin
+        command = ARGV.shift
+        require "vixen/command_line/#{command}"
 
-      klass.new.execute
-    rescue LoadError
-      puts "Unknown command: #{command}"
+        klass = self.class.const_get(command.split('_').map {|s| s.capitalize }.join)
+        raise "Couldn't find #{command}" unless klass
+
+        klass.new.execute
+      rescue LoadError
+        puts "Unknown command: #{command}"
+      end
     end
   end
 end

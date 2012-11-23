@@ -220,7 +220,7 @@ module Vixen::Bridge
   def self.create_snapshot(vm_handle, name, description, &block)
     progress_proc = safe_proc_from_block &block
     snapshot_handle = pointer_to_handle do |snapshot_handle_pointer|
-      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer, 1, 0.2 do
+      wait_for_async_handle_creation_job "create snapshot", snapshot_handle_pointer, 0.2, 0.2 do
         Vixen.logger.info "creating %s snapshot" % name
         VixVM_CreateSnapshot vm_handle, name, description,
                              VixCreateSnapshotOptions[:include_memory],
@@ -231,7 +231,7 @@ module Vixen::Bridge
 
   def self.revert_to_snapshot(vm, snapshot, &block)
     progress_proc = safe_proc_from_block &block
-    wait_for_async_job(("revert to %s snapshot" % snapshot.display_name), 1, 0.2) do
+    wait_for_async_job(("revert to %s snapshot" % snapshot.display_name), 0.2, 0.2) do
       VixVM_RevertToSnapshot vm.handle, snapshot.handle, VixVMPowerOptions[:normal],
                              VixHandle[:invalid], progress_proc, nil
     end
@@ -239,7 +239,7 @@ module Vixen::Bridge
 
   def self.remove_snapshot(vm, snapshot, &block)
     progress_proc = safe_proc_from_block &block
-    wait_for_async_job(("remove %s snapshot" % snapshot.display_name), 1, 0.2) do
+    wait_for_async_job(("remove %s snapshot" % snapshot.display_name), 0.2, 0.2) do
       VixVM_RemoveSnapshot vm.handle, snapshot.handle, 0, progress_proc, nil
     end
   end

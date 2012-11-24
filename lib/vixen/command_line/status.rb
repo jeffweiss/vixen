@@ -2,8 +2,7 @@ require 'vixen/command_line/base'
 
 class Vixen::CommandLine::Status < Vixen::CommandLine::Base
   def execute
-    new_line_after { print "Connecting to local host" }
-    host = context[:host] || Vixen.local_connect
+    new_line_after { print "Connecting to host" }
 
     vms = host.paths_of_running_vms do |job_handle, event_type, more_event_info, client_data|
       print " <searching> "

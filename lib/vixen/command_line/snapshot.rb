@@ -34,18 +34,20 @@ class Vixen::CommandLine::Snapshot < Vixen::CommandLine::Base
   end
 
   def create
+    snapshot_name = ARGV.shift
+    vms.each do |vm|
+      new_line_after do
+        vm.create_snapshot(snapshot_name) do |job_handle, event_type, more_event_info, client_data|
+          print "Creating #{snapshot_name} snapshot on #{vm.name}"
+        end
+      end
+    end
   end
 
   def revert
   end
 
   def remove
-  end
-
-  def vms
-    return @vms unless @vms.nil?
-    context[:vms] ||= host.running_vms
-    @vms = context[:vms]
   end
 
   def default_action

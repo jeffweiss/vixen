@@ -1,9 +1,9 @@
 class Vixen::CommandLine::Base
   attr_reader :start, :context
 
-  def initialize
+  def initialize(context)
     @start = Time.now
-    @context = {}
+    @context = context
   end
 
   def elapsed_time
@@ -29,6 +29,12 @@ class Vixen::CommandLine::Base
   def host
     return @host unless @host.nil?
     @host = context[:host] || Vixen.local_connect
+  end
+
+  def vms
+    return @vms unless @vms.nil?
+    context[:vms] ||= host.running_vms
+    @vms = context[:vms]
   end
 
 end

@@ -8,7 +8,7 @@ class Vixen::Model::VM < Vixen::Model::Base
   end
 
   def path
-    get_string_property Vixen::Constants::VixPropertyId[:vmx_pathname]
+    get_string_property Vixen::Constants::VixPropertyId[:vm_vmx_pathname]
   end
 
   def guest_os
